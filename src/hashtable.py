@@ -2,10 +2,13 @@
 # Linked List hash table key/value pair
 # '''
 class LinkedPair:
-    def __init__(self, key, value):
+    def __init__(self, key, value, next=None):
         self.key = key
         self.value = value
-        self.next = None
+        self.next = next
+
+    def __str__(self):
+      return '{' + f'"{self.key}":{self.value}, next: {self.next}' + '}'
 
 class HashTable:
     '''
@@ -13,6 +16,7 @@ class HashTable:
     that accepts string keys
     '''
     def __init__(self, capacity):
+        self.count = 0
         self.capacity = capacity  # Number of buckets in the hash table
         self.storage = [None] * capacity
 
@@ -51,9 +55,16 @@ class HashTable:
 
         Fill this in.
         '''
-        pass
+        if self.count + 1 >= self.capacity:
+          self.resize()
 
+        newPair = LinkedPair(key, value) # self._hash_mod()
+        self.storage[self.count] = newPair
+        if self.count > 0:
+          self.storage[self.count - 1].next = newPair
 
+        print('inserted', newPair)
+        self.count += 1
 
     def remove(self, key):
         '''
@@ -63,8 +74,14 @@ class HashTable:
 
         Fill this in.
         '''
-        pass
-
+        index = self._hash_mod(key)
+        print('removing', key, 'as', index)
+        if index >= 0 and index <= self.count:
+          for i in range(index + 1, self.count + 1):
+            self.storage[i] = self.storage[i + 1]
+          self.count -= 1
+        else:
+          print("key does not exist")
 
     def retrieve(self, key):
         '''
@@ -74,8 +91,11 @@ class HashTable:
 
         Fill this in.
         '''
-        pass
-
+        index = self._hash_mod(key)
+        if index >= 0 and index <= self.capacity:
+          return self.storage[index]
+        else:
+          print("key does not exist")
 
     def resize(self):
         '''
@@ -84,10 +104,14 @@ class HashTable:
 
         Fill this in.
         '''
-        pass
+        self.capacity *= 2
+        new_storage = [None] * self.capacity
+        for i in range(self.count):
+            new_storage[i] = self.storage[i]
 
-
-
+        self.storage = new_storage
+        print(f'after resize() {len(self.storage)} {self.storage}')
+        
 if __name__ == "__main__":
     ht = HashTable(2)
 
