@@ -2,10 +2,10 @@
 # Linked List hash table key/value pair
 # '''
 class LinkedPair:
-    def __init__(self, key, value, next=None):
+    def __init__(self, key, value):
         self.key = key
         self.value = value
-        self.next = next
+        self.next = None
 
     def __str__(self):
       return '{' + f'"{self.key}":{self.value}, next: {self.next}' + '}'
@@ -20,7 +20,6 @@ class HashTable:
         self.capacity = capacity  # Number of buckets in the hash table
         self.storage = [None] * capacity
 
-
     def _hash(self, key):
         '''
         Hash an arbitrary key and return an integer.
@@ -28,7 +27,6 @@ class HashTable:
         You may replace the Python hash with DJB2 as a stretch goal.
         '''
         return hash(key)
-
 
     def _hash_djb2(self, key):
         '''
@@ -38,14 +36,12 @@ class HashTable:
         '''
         pass
 
-
     def _hash_mod(self, key):
         '''
         Take an arbitrary key and return a valid integer index
         within the storage capacity of the hash table.
         '''
         return self._hash(key) % self.capacity
-
 
     def insert(self, key, value):
         '''
@@ -55,16 +51,22 @@ class HashTable:
 
         Fill this in.
         '''
-        if self.count + 1 >= self.capacity:
-          self.resize()
-
-        newPair = LinkedPair(key, value) # self._hash_mod()
-        self.storage[self.count] = newPair
-        if self.count > 0:
-          self.storage[self.count - 1].next = newPair
-
-        print('inserted', newPair)
         self.count += 1
+        if self.count >= self.capacity:
+          self.resize()
+        index = self._hash_mod(key)
+        newPair = LinkedPair(key, value)
+        bucket = self.storage[index]
+        if bucket is None:
+          self.storage[index] = newPair
+          return
+
+        # colision handling
+        prev = bucket
+        while bucket is not None:
+          prev = bucket
+          bucket = bucket.next
+        prev.next = newPair
 
     def remove(self, key):
         '''
@@ -74,14 +76,21 @@ class HashTable:
 
         Fill this in.
         '''
-        index = self._hash_mod(key)
-        print('removing', key, 'as', index)
-        if index >= 0 and index <= self.count:
-          for i in range(index + 1, self.count + 1):
-            self.storage[i] = self.storage[i + 1]
-          self.count -= 1
+        bucket = self.storage[self._hash_mod(key)]
+        prev = None
+        while bucket is not None and bucket.key != key:
+          prev = bucket
+          bucket = bucket.next
+        if bucket is None:
+          return None
         else:
-          print("key does not exist")
+          self.count -= 1
+          value = bucket.value
+          if prev is None:
+            bucket = None
+          else:
+            prev.next = prev.next.next
+          return value
 
     def retrieve(self, key):
         '''
@@ -91,11 +100,10 @@ class HashTable:
 
         Fill this in.
         '''
-        index = self._hash_mod(key)
-        if index >= 0 and index <= self.capacity:
-          return self.storage[index]
-        else:
-          print("key does not exist")
+        bucket = self.storage[self._hash_mod(key)]
+        while bucket is not None and bucket.key != key:
+          bucket = bucket.next
+        return bucket.value if bucket is not None else None
 
     def resize(self):
         '''
@@ -104,26 +112,28 @@ class HashTable:
 
         Fill this in.
         '''
+        oldStorage = self.storage
+        oldCount = self.count
+        self.count = 0
         self.capacity *= 2
-        new_storage = [None] * self.capacity
-        for i in range(self.count):
-            new_storage[i] = self.storage[i]
-
-        self.storage = new_storage
-        print(f'after resize() {len(self.storage)} {self.storage}')
+        self.storage = [None] * self.capacity
+        print('new storage', self.storage)
+        for i in range(0, oldCount):
+          bucket = oldStorage[i]
+          if bucket is not None:
+            while bucket is not None:
+              print('insert?', bucket.key, bucket.value)
+              self.insert(bucket.key, bucket.value)
+              bucket = bucket.next
         
 if __name__ == "__main__":
     ht = HashTable(2)
 
     ht.insert("line_1", "Tiny hash table")
-    ht.insert("line_2", "Filled beyond capacity")
-    ht.insert("line_3", "Linked list saves the day!")
-
-    print("")
-
-    # Test storing beyond capacity
     print(ht.retrieve("line_1"))
+    ht.insert("line_2", "Filled beyond capacity")
     print(ht.retrieve("line_2"))
+    ht.insert("line_3", "Linked list saves the day!")
     print(ht.retrieve("line_3"))
 
     # Test resizing
@@ -131,7 +141,7 @@ if __name__ == "__main__":
     ht.resize()
     new_capacity = len(ht.storage)
 
-    print(f"\nResized from {old_capacity} to {new_capacity}.\n")
+    print(f"\nResized from {old_capacity} to {new_capacity}.\n{ht.storage}")
 
     # Test if data intact after resizing
     print(ht.retrieve("line_1"))
