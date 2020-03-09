@@ -59,14 +59,22 @@ class HashTable:
         bucket = self.storage[index]
         if bucket is None:
           self.storage[index] = newPair
-          return
+          return newPair.value
 
         # colision handling
         prev = bucket
+        keyExists = False
         while bucket is not None:
           prev = bucket
+          if bucket.key == key:
+            keyExists = True
+            break
           bucket = bucket.next
-        prev.next = newPair
+        if keyExists:
+          bucket.value = value
+        else:
+          prev.next = newPair
+        return newPair.value
 
     def remove(self, key):
         '''
@@ -76,7 +84,8 @@ class HashTable:
 
         Fill this in.
         '''
-        bucket = self.storage[self._hash_mod(key)]
+        index = self._hash_mod(key)
+        bucket = self.storage[index]
         prev = None
         while bucket is not None and bucket.key != key:
           prev = bucket
@@ -87,7 +96,7 @@ class HashTable:
           self.count -= 1
           value = bucket.value
           if prev is None:
-            bucket = None
+            self.storage[index] = None
           else:
             prev.next = prev.next.next
           return value
@@ -100,10 +109,14 @@ class HashTable:
 
         Fill this in.
         '''
-        bucket = self.storage[self._hash_mod(key)]
+        index = self._hash_mod(key)
+        bucket = self.storage[index]
         while bucket is not None and bucket.key != key:
           bucket = bucket.next
-        return bucket.value if bucket is not None else None
+        if bucket is not None:
+          return bucket.value
+        else:
+          return None
 
     def resize(self):
         '''
@@ -117,35 +130,11 @@ class HashTable:
         self.count = 0
         self.capacity *= 2
         self.storage = [None] * self.capacity
-        print('new storage', self.storage)
+        #print('resize -> new storage', self.capacity, self.storage)
         for i in range(0, oldCount):
           bucket = oldStorage[i]
           if bucket is not None:
             while bucket is not None:
-              print('insert?', bucket.key, bucket.value)
+              #print('resize -> insert', bucket.key, bucket.value)
               self.insert(bucket.key, bucket.value)
               bucket = bucket.next
-        
-if __name__ == "__main__":
-    ht = HashTable(2)
-
-    ht.insert("line_1", "Tiny hash table")
-    print(ht.retrieve("line_1"))
-    ht.insert("line_2", "Filled beyond capacity")
-    print(ht.retrieve("line_2"))
-    ht.insert("line_3", "Linked list saves the day!")
-    print(ht.retrieve("line_3"))
-
-    # Test resizing
-    old_capacity = len(ht.storage)
-    ht.resize()
-    new_capacity = len(ht.storage)
-
-    print(f"\nResized from {old_capacity} to {new_capacity}.\n{ht.storage}")
-
-    # Test if data intact after resizing
-    print(ht.retrieve("line_1"))
-    print(ht.retrieve("line_2"))
-    print(ht.retrieve("line_3"))
-
-    print("")
