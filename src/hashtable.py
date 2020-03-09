@@ -125,16 +125,17 @@ class HashTable:
 
         Fill this in.
         '''
-        oldStorage = self.storage
-        oldCount = self.count
-        self.count = 0
-        self.capacity *= 2
-        self.storage = [None] * self.capacity
-        #print('resize -> new storage', self.capacity, self.storage)
-        for i in range(0, oldCount):
-          bucket = oldStorage[i]
-          if bucket is not None:
-            while bucket is not None:
-              #print('resize -> insert', bucket.key, bucket.value)
-              self.insert(bucket.key, bucket.value)
-              bucket = bucket.next
+        if self.count >= self.capacity:
+          oldStorage = self.storage
+          oldCount = self.count
+          self.count = 0
+          self.capacity *= 2
+          self.storage = [None] * self.capacity
+          #print('resize -> new storage', self.capacity, self.storage)
+          for i in range(0, oldCount):
+            bucket = oldStorage[i]
+            if bucket is not None:
+              while bucket is not None:
+                #print('resize -> insert', bucket.key, bucket.value)
+                self.insert(bucket.key, bucket.value)
+                bucket = bucket.next
