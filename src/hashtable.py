@@ -19,6 +19,9 @@ class HashTable:
         self.count = 0
         self.capacity = capacity  # Number of buckets in the hash table
         self.storage = [None] * capacity
+        self.minCapacity = capacity
+        self.minLoadFactor = 0.2
+        self.maxLoadFactor = 0.7
 
     def _hash(self, key):
         '''
@@ -26,7 +29,7 @@ class HashTable:
 
         You may replace the Python hash with DJB2 as a stretch goal.
         '''
-        return hash(key)
+        return self._hash_djb2(key)
 
     def _hash_djb2(self, key):
         '''
@@ -34,7 +37,10 @@ class HashTable:
 
         OPTIONAL STRETCH: Research and implement DJB2
         '''
-        pass
+        hashVal = 5381
+        for char in key:
+          hashVal += hashVal << 5 + ord(char)
+        return hashVal
 
     def _hash_mod(self, key):
         '''
@@ -43,7 +49,7 @@ class HashTable:
         '''
         return self._hash(key) % self.capacity
 
-    def insert(self, key, value):
+    def insert(self, key, value, resizing = False):
         '''
         Store the value with the given key.
 
@@ -52,7 +58,7 @@ class HashTable:
         Fill this in.
         '''
         self.count += 1
-        if self.count >= self.capacity:
+        if not resizing:
           self.resize()
         index = self._hash_mod(key)
         newPair = LinkedPair(key, value)
@@ -118,24 +124,38 @@ class HashTable:
         else:
           return None
 
+    def shouldResize(self):
+      shouldResize = False
+      # grow
+      if self.count > self.maxLoadFactor * self.capacity:
+        # print('should be growin?', self.count, '>', self.maxLoadFactor * self.capacity)
+        self.capacity = self.capacity * 2
+        shouldResize = True
+      # shrink
+      elif self.count < self.minLoadFactor * self.capacity and self.capacity >= self.minCapacity * 2:
+        # print('should be shrinkin', self.count, '<', self.minLoadFactor * self.capacity, 'and', self.capacity >= self.minCapacity * 2)
+        self.capacity = self.capacity // 2
+        shouldResize = True
+      return shouldResize
     def resize(self):
-        '''
-        Doubles the capacity of the hash table and
-        rehash all key/value pairs.
+      '''
+      Doubles the capacity of the hash table and
+      rehash all key/value pairs.
 
-        Fill this in.
-        '''
-        if self.count >= self.capacity:
-          oldStorage = self.storage
-          oldCount = self.count
-          self.count = 0
-          self.capacity *= 2
-          self.storage = [None] * self.capacity
-          #print('resize -> new storage', self.capacity, self.storage)
-          for i in range(0, oldCount):
-            bucket = oldStorage[i]
-            if bucket is not None:
-              while bucket is not None:
-                #print('resize -> insert', bucket.key, bucket.value)
-                self.insert(bucket.key, bucket.value)
-                bucket = bucket.next
+      Fill this in.
+      '''
+      if self.shouldResize():
+        oldStorage = self.storage
+        oldCount = self.count
+        self.count = 0
+        self.storage = [None] * self.capacity
+        #print('resize -> new storage', self.capacity, self.storage)
+        for i in range(0, oldCount):
+          bucket = oldStorage[i]
+          if bucket is not None:
+            while bucket is not None:
+              #print('resize -> insert', bucket.key, bucket.value)
+              self.insert(bucket.key, bucket.value, True)
+              bucket = bucket.next
+      else:
+        return False
